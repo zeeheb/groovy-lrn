@@ -5,8 +5,10 @@ import grails.rest.*
 import grails.converters.*
 
 class CalculadoraController {
-	static responseFormats = ['xml', 'json']
-	
+	static responseFormats = ['json', 'xml']
+    
+    def calculadoraService
+
     def index() {
         render status: 200
      }
@@ -18,6 +20,8 @@ class CalculadoraController {
 
     //     render (termo1+termo2)
     // }
+
+    
 
     def divisao() {
         BigDecimal result = 1
@@ -35,8 +39,11 @@ class CalculadoraController {
                     result *= (1/new BigDecimal(it))
                 }
 
-            } catch (ArithmeticException) {
+                // render result
+
+            } catch (ArithmeticException ex) {
                 render status: 422, message: "Divisao por 0"
+                
             }
             catch( NumberFormatException ex) {
                 render status: 422, message: "Erro ao formatar: ${it}"
@@ -44,11 +51,13 @@ class CalculadoraController {
         }
   
     } catch (Exception ex) {
-        render status: 422, ex.message
+        render status: 422, ex.message, message: "Erro"
         return
     }
     
-    render result
+    // render ([value: [a: 1, b: 2, c:3, d: [1,2,3,4]]] as JSON)
+    
+    respond ([result: result])
 }
 
     def multiplicacao() {
@@ -67,21 +76,13 @@ class CalculadoraController {
     } 
 
     def soma2() {
-        BigDecimal soma = 0
-
-
-        
-         request.JSON.termo.each { 
-            try { 
-                soma += new BigDecimal(it)
+        try {
+            BigDecimal soma = calculadoraService.soma(request.JSON.termo)
+            render soma
+        } catch(Exception ex) {
+            render status: 422, message: "Erro no controller"
+        }
             
-            } catch(NumberFormatException ex) {
-                render status: 422, message: "Erro ao converter o termo '${it}'" 
-                return 
-            } 
-         }
-
-         render soma
     }
 
 
@@ -95,12 +96,13 @@ class CalculadoraController {
             } 
 
             try {
-            for(int i = 0; i < request.JSON.termo[1]; i++) {
-                result *= (request.JSON.termo[0])
-            }
+                for(int i = 0; i < request.JSON.termo[1]; i++) {
+                    result *= (request.JSON.termo[0])
+                }
 
             } catch (Exception ex) {
                 render status: 422, message: "Termo invalido ao converter"
+                
             }
 
             
